@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { loginWithEnvCredentials } from "@/lib/authEnvLogin";
 import {
   getTheftOccurrences,
   type TheftOccurrence
 } from "@/services/magic_api/security";
 import type { TheftOccurrencesParams } from "@/services/magic_api/security/models";
+import { useCallback, useEffect, useState } from "react";
 
 interface UseTheftOccurrencesResult {
   occurrences: TheftOccurrence[];
@@ -25,6 +26,7 @@ export function useTheftOccurrences(
     setLoading(true);
     setError(null);
     try {
+      await loginWithEnvCredentials();
       const response = await getTheftOccurrences(params);
       setOccurrences(response.data ?? []);
       setTotal(response.total ?? 0);

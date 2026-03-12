@@ -1,24 +1,12 @@
 import type { TheftOccurrence } from "@/services/magic_api/security";
-import {
-  AlertTriangle,
-  Clock,
-  PackageCheck,
-  Radio,
-  ScanBarcode,
-  UserX,
-  Users
-} from "lucide-react";
+import { Clock, LogIn, LogOut, Radio, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useMemo } from "react";
 
-type ActivityType =
-  | "produtos_lidos"
-  | "furtos"
-  | "nao_identificados"
-  | "recuperados";
+type ActivityType = "entrada" | "saida";
 
-interface Activity {
+export interface Activity {
   id: string;
   type: ActivityType;
   description: string;
@@ -42,29 +30,17 @@ const activityConfig: Record<
   ActivityType,
   { icon: LucideIcon; bg: string; iconColor: string; border: string }
 > = {
-  produtos_lidos: {
-    icon: ScanBarcode,
+  entrada: {
+    icon: LogIn,
+    bg: "bg-blue-50",
+    iconColor: "text-blue-600",
+    border: "border-blue-200"
+  },
+  saida: {
+    icon: LogOut,
     bg: "bg-green-50",
     iconColor: "text-green-600",
     border: "border-green-200"
-  },
-  furtos: {
-    icon: AlertTriangle,
-    bg: "bg-red-50",
-    iconColor: "text-red-600",
-    border: "border-red-200"
-  },
-  nao_identificados: {
-    icon: UserX,
-    bg: "bg-purple-50",
-    iconColor: "text-purple-600",
-    border: "border-purple-200"
-  },
-  recuperados: {
-    icon: PackageCheck,
-    bg: "bg-amber-50",
-    iconColor: "text-amber-600",
-    border: "border-amber-200"
   }
 };
 
@@ -72,11 +48,11 @@ function mapTheftToActivity(o: TheftOccurrence): Activity {
   const firstProduct = o.relatedProducts?.[0];
   const description =
     firstProduct?.name != null
-      ? `Furto - ${o.location.name}: ${firstProduct.name}`
-      : `Furto - ${o.location.name}`;
+      ? `Entrada - ${o.location.name}: ${firstProduct.name}`
+      : `Entrada - ${o.location.name}`;
   return {
     id: o.occurrenceId,
-    type: "furtos",
+    type: "entrada",
     description,
     timestamp: new Date(o.occurredAt),
     antenna: 0,
@@ -86,15 +62,20 @@ function mapTheftToActivity(o: TheftOccurrence): Activity {
 }
 
 interface ActivityLogProps {
+  activities?: Activity[];
   theftOccurrences?: TheftOccurrence[];
 }
 
-export function ActivityLog({ theftOccurrences = [] }: ActivityLogProps) {
+export function ActivityLog({
+  activities: activitiesProp,
+  theftOccurrences = []
+}: ActivityLogProps) {
   const activities = useMemo(() => {
-    return theftOccurrences
-      .map(mapTheftToActivity)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [theftOccurrences]);
+    const list = activitiesProp ?? theftOccurrences.map(mapTheftToActivity);
+    return [...list].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    );
+  }, [activitiesProp, theftOccurrences]);
 
   return (
     <motion.div

@@ -1,44 +1,6 @@
-import magicApiAuth from "@/services/magic_api/auth";
+import { loginWithEnvCredentials } from "@/lib/authEnvLogin";
 import { getEpcQueue } from "@/services/magic_api/magiclog";
 import { useCallback, useEffect, useState } from "react";
-
-function getAuthCredentials() {
-  const email = process.env.NEXT_PUBLIC_AUTH_EMAIL;
-  const password = process.env.NEXT_PUBLIC_AUTH_PASSWORD;
-  const magicId = process.env.NEXT_PUBLIC_AUTH_MAGIC_ID;
-  if (!email || !password || !magicId) return null;
-  return { email, password, magicId };
-}
-
-function storeTokens(accessToken: string, refreshToken: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("loginToken", accessToken);
-  sessionStorage.setItem("loginToken", accessToken);
-  localStorage.setItem("refreshToken", refreshToken);
-  sessionStorage.setItem("refreshToken", refreshToken);
-}
-
-async function loginWithEnvCredentials(): Promise<boolean> {
-  const creds = getAuthCredentials();
-  if (!creds) return false;
-  try {
-    const res = await magicApiAuth.emailLogin(creds);
-    if (res?.data?.accessToken && res?.data?.refreshToken) {
-      storeTokens(res.data.accessToken, res.data.refreshToken);
-      return true;
-    }
-  } catch {
-    return false;
-  }
-  return false;
-}
-
-function hasStoredToken(): boolean {
-  if (typeof window === "undefined") return false;
-  return !!(
-    localStorage.getItem("loginToken") || sessionStorage.getItem("loginToken")
-  );
-}
 
 interface UseEpcQueueResult {
   data: unknown;
@@ -56,13 +18,15 @@ export function useEpcQueue(): UseEpcQueueResult {
     setLoading(true);
     setError(null);
     try {
-      if (!hasStoredToken()) {
-        const loggedIn = await loginWithEnvCredentials();
-        if (!loggedIn) {
-          setError(new Error("Não autenticado e falha no login com credenciais do .env"));
-          setLoading(false);
-          return;
-        }
+      const loggedIn = await loginWithEnvCredentials();
+      if (!loggedIn) {
+        setError(
+          new Error(
+            "Não autenticado e falha no login com credenciais do .env"
+          )
+        );
+        setLoading(false);
+        return;
       }
       const result = await getEpcQueue();
       setData(result);
@@ -85,7 +49,11 @@ export function useEpcQueue(): UseEpcQueueResult {
             );
           }
         } else {
-          setError(new Error("Não autenticado e falha no login com credenciais do .env"));
+          setError(
+            new Error(
+              "Não autenticado e falha no login com credenciais do .env"
+            )
+          );
         }
       } else {
         setError(err instanceof Error ? err : new Error(String(err)));
